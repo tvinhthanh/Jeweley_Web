@@ -5,23 +5,32 @@ import CommentList from "@/components/comment/CommentList";
 import { getProductBySlug } from "@/services/productService";
 import { Product } from "@/lib/types/types";
 
-// 👇 export cái này để tránh lỗi dynamic routing (Next.js yêu cầu khi không dùng generateStaticParams)
+// ✅ Required by Next.js App Router if you don't use generateStaticParams
 export const dynamicParams = true;
 
 type ProductPageProps = {
-  params: { slug: string }; // không cần dấu ? nếu bạn luôn gọi từ dynamic route
+  params: {
+    slug: string;
+  };
 };
 
 export default async function ProductPage({ params }: ProductPageProps) {
-  const slug = params?.slug;
+  const { slug } = params;
 
   // Nếu không có slug → trả về trang 404
   if (!slug) return notFound();
 
   // Lấy thông tin sản phẩm theo slug
-  const product: Product | null = await getProductBySlug(slug);
+  let product: Product | null = null;
 
-  // Nếu không tìm thấy sản phẩm → thông báo
+  try {
+    product = await getProductBySlug(slug);
+  } catch (error) {
+    console.error("Lỗi khi lấy sản phẩm:", error);
+    return notFound();
+  }
+
+  // Nếu không tìm thấy sản phẩm
   if (!product) {
     return (
       <div className="text-center py-20">
@@ -32,7 +41,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
   return (
     <div className="space-y-12">
-      {/* Thông tin sản phẩm */}
+      {/* Thông tin chi tiết sản phẩm */}
       <ProductDetail product={product} />
 
       {/* Sản phẩm tương tự */}
@@ -47,7 +56,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
       {/* Bình luận khách hàng */}
       <div className="max-w-screen-xl mx-auto px-4 md:px-8">
         <h2 className="text-xl font-bold mb-4">Bình luận từ khách hàng</h2>
-        <CommentList objectId={Number(product.id)} />
+        <CommentList objectId={product.id} />
       </div>
     </div>
   );
