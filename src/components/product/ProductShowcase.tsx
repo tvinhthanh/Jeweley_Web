@@ -2,7 +2,8 @@
 
 import Image from "next/image";
 import ProductCard from "./ProductCard";
-import { Product } from "@/lib/types/types"; // hoặc đường dẫn interface của bạn
+import { Product } from "@/lib/types/types";
+import { useRouter } from "next/navigation";
 
 interface Props {
   title?: string;
@@ -19,6 +20,12 @@ export default function ProductShowcase({
   products,
   type,
 }: Props) {
+  const router = useRouter();
+
+  const handleSeeMore = () => {
+    router.push("/category/all");
+  };
+
   return (
     <section className="py-8 px-4 bg-white">
       <div className="max-w-screen-xl mx-auto">
@@ -32,7 +39,7 @@ export default function ProductShowcase({
           </div>
         )}
 
-        {/* Collection mode */}
+        {/* Collection Mode */}
         {type === "collection" ? (
           <>
             {typeof banner === "string" && (
@@ -54,15 +61,24 @@ export default function ProductShowcase({
                   id={p.id}
                   slug={p.slug}
                   title={p.name}
-                  image={p.images[0] || "/images/ring.png"} // fallback nếu thiếu ảnh
+                  image={p.images[0] || "/images/ring.png"}
                   price={p.price}
                   code={p.code}
                 />
               ))}
+
+              <div className="col-span-full text-center mt-2">
+                <button
+                  className="px-6 py-2 border text-sm rounded hover:bg-gray-100"
+                  onClick={handleSeeMore}
+                >
+                  Xem thêm
+                </button>
+              </div>
             </div>
           </>
         ) : (
-          // List mode
+          // List Mode
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
             <div className="flex flex-col gap-4">
               {Array.isArray(banner)
@@ -99,16 +115,18 @@ export default function ProductShowcase({
                   code={p.code}
                 />
               ))}
+
+              <div className="col-span-full text-center mt-2">
+                <button
+                  className="px-6 py-2 border text-sm rounded hover:bg-gray-100"
+                  onClick={handleSeeMore}
+                >
+                  Xem thêm
+                </button>
+              </div>
             </div>
           </div>
         )}
-
-        {/* Nút xem thêm */}
-        <div className="text-center mt-6">
-          <button className="px-6 py-2 border text-sm rounded hover:bg-gray-100">
-            Xem thêm
-          </button>
-        </div>
       </div>
     </section>
   );

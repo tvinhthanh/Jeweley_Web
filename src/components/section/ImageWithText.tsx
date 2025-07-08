@@ -67,7 +67,7 @@ export default function SectionImageWithText({
       </section>
 
       {/* Nền trắng phía dưới để tách section */}
-      <div className="bg-white h-[80px] md:h-[100px] lg:h-[120px] w-full"></div>
+      <div className="bg-white h-4 md:h-6 lg:h-8 w-full"></div>
     </div>
   );
 }

@@ -32,7 +32,6 @@ export default function ProductCard({
       : "Liên hệ";
 
   useEffect(() => {
-    // Kiểm tra sản phẩm có nằm trong danh sách yêu thích không
     getFavorites().then((products) => {
       setLiked(products.some((p) => p.id === id));
     });
@@ -60,8 +59,8 @@ export default function ProductCard({
   };
 
   return (
-    <div className="w-60 rounded-xl bg-gradient-to-b from-white to-[#e3edf7] p-4 shadow-md transition-transform hover:scale-[1.02]">
-      <div className="relative w-full h-40">
+    <div className="w-64 rounded-2xl bg-gradient-to-b from-white to-[#e3edf7] p-5 shadow-md transition-transform hover:scale-[1.03]">
+      <div className="relative w-full h-44">
         <Link href={`/product/${slug}`} aria-label={`Xem chi tiết ${title}`}>
           <Image
             src={!imgError && image ? image : "/images/ring.png"}
@@ -81,9 +80,17 @@ export default function ProductCard({
         </button>
       </div>
 
-      <div className="mt-3 text-center">
+      <div className="mt-4 text-center">
         <Link href={`/product/${slug}`} className="block">
-          <p className="text-sm font-medium text-gray-800 line-clamp-2">
+          <p
+            className="text-base font-medium text-gray-800 overflow-hidden text-ellipsis"
+            style={{
+              display: "-webkit-box",
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: "vertical",
+              minHeight: "3rem", // đảm bảo khung cố định
+            }}
+          >
             {title}
             {code && (
               <span className="text-gray-500 font-normal"> - {code}</span>

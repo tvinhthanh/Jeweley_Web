@@ -18,6 +18,7 @@ import ServiceFeaturesSection from "@/components/section/ServiceFeaturesSection"
 import SectionImageWithText from "@/components/section/ImageWithText";
 import TypeSection from "@/components/section/Type";
 import StoreNetwork from "@/components/section/StoreNetwork";
+import BlogSection from "@/components/section/Blog";
 
 export default function Home() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -73,7 +74,7 @@ export default function Home() {
               imgLeft="/images/hero1.png"
               imgRight="/images/hero2.png"
             />
-            <ProductList products={products} displayMode="loadMore" />
+            <ProductList products={products} displayMode="scroll" />
             <ProductFeatureLSection
               title="SẢN PHẨM KHUYẾN MÃI"
               description="Thêm chút ngọt ngào cho người yêu, cho mẹ, hoặc đơn giản là cho chính mình"
@@ -85,7 +86,7 @@ export default function Home() {
         )}
 
         <SectionImageWithText
-          title="KIM CƯƠNG GIA"
+          title="Kim Cương GIA"
           description="Kim cương thiên nhiên GIA được tuyển chọn dành riêng cho bạn..."
           image="/images/diamond.png"
           contentPosition="left"
@@ -98,6 +99,7 @@ export default function Home() {
           bgColor="#f0fff7"
         />
         <TypeSection />
+        <BlogSection />
         <StoreNetwork />
       </main>
     </>

@@ -47,8 +47,8 @@ export default function BannerSlider() {
     slidesToShow: 1,
     slidesToScroll: 1,
     autoplay: true,
-    autoplaySpeed: 5000,
-    arrows: false,
+    autoplaySpeed: 2000,
+    arrows: true,
   };
 
   return (
@@ -63,11 +63,6 @@ export default function BannerSlider() {
               className="object-cover"
               priority={index === 0}
             />
-            <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-              <h2 className="text-white text-xl md:text-3xl font-bold text-center px-4">
-                {img.title}
-              </h2>
-            </div>
           </div>
         ))}
       </Slider>
