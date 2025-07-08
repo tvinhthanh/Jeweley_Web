@@ -13,7 +13,7 @@ type ProductPageProps = {
 };
 
 export default async function ProductPage({ params }: ProductPageProps) {
-  const { slug } = await params; // ✅ FIXED: await trước khi truy cập slug
+  const { slug } = await params; 
 
   if (!slug) return notFound();
 
