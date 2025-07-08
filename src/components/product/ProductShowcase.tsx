@@ -2,17 +2,12 @@
 
 import Image from "next/image";
 import ProductCard from "./ProductCard";
-
-interface Product {
-  name: string;
-  image: string;
-  price: number;
-}
+import { Product } from "@/lib/types/types"; // hoặc đường dẫn interface của bạn
 
 interface Props {
   title?: string;
   description?: string;
-  banner?: string | string[]; // banner có thể là 1 hoặc nhiều ảnh
+  banner?: string | string[];
   products: Product[];
   type: "collection" | "list";
 }
@@ -37,7 +32,7 @@ export default function ProductShowcase({
           </div>
         )}
 
-        {/* Kiểu collection: banner phía trên + 4 sản phẩm */}
+        {/* Collection mode */}
         {type === "collection" ? (
           <>
             {typeof banner === "string" && (
@@ -53,15 +48,22 @@ export default function ProductShowcase({
             )}
 
             <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-6">
-              {products.slice(0, 4).map((p, i) => (
-                <ProductCard key={i} product={p} />
+              {products.slice(0, 4).map((p) => (
+                <ProductCard
+                  key={p.id}
+                  id={p.id}
+                  slug={p.slug}
+                  title={p.name}
+                  image={p.images[0] || "/images/ring.png"} // fallback nếu thiếu ảnh
+                  price={p.price}
+                  code={p.code}
+                />
               ))}
             </div>
           </>
         ) : (
-          // Kiểu list: 1 cột trái = 2 banner, 2 cột phải = 6 sản phẩm
+          // List mode
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
-            {/* Cột 1: Banner (chiếm 1/3 chiều ngang) */}
             <div className="flex flex-col gap-4">
               {Array.isArray(banner)
                 ? banner.slice(0, 2).map((img, idx) => (
@@ -85,10 +87,17 @@ export default function ProductShowcase({
                   )}
             </div>
 
-            {/* Cột 2 + 3: 6 sản phẩm chia 2 hàng 3 cột */}
             <div className="md:col-span-2 grid grid-cols-2 sm:grid-cols-3 gap-4">
-              {products.slice(0, 6).map((p, i) => (
-                <ProductCard key={i} product={p} />
+              {products.slice(0, 6).map((p) => (
+                <ProductCard
+                  key={p.id}
+                  id={p.id}
+                  slug={p.slug}
+                  title={p.name}
+                  image={p.images[0] || "/images/ring.png"}
+                  price={p.price}
+                  code={p.code}
+                />
               ))}
             </div>
           </div>

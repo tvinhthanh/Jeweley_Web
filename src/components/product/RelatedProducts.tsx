@@ -1,87 +1,38 @@
 "use client";
 
-import Image from "next/image";
-import Link from "next/link";
+import { useEffect, useState } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation } from "swiper/modules";
 import "swiper/css";
 import "swiper/css/navigation";
 
-interface Product {
-  id: number;
-  name: string;
-  price: number;
-  image: string;
+import { getProductsByCategoryId } from "@/services/productService";
+import { Product } from "@/lib/types/types";
+import Link from "next/link";
+import Image from "next/image";
+
+type Props = {
   slug: string;
-}
+  categoryId: number | null;
+};
 
-const relatedItems: Product[] = [
-  {
-    id: 1,
-    name: "Nhẫn Kim cương Vàng Trắng 14K My First Diamond – MFD58982",
-    price: 19945000,
-    image: "/images/ring.png",
-    slug: "nhan-vang-trang-14k-1",
-  },
-  {
-    id: 2,
-    name: "Nhẫn Kim cương Vàng 18K – MFD58983",
-    price: 18500000,
-    image: "/images/ring.png",
-    slug: "nhan-vang-18k",
-  },
-  {
-    id: 3,
-    name: "Nhẫn Kim cương Trắng – MFD58984",
-    price: 20450000,
-    image: "/images/ring.png",
-    slug: "nhan-kim-cuong-trang",
-  },
-  {
-    id: 4,
-    name: "Nhẫn Nữ Đính Đá Sang Trọng – MFD58985",
-    price: 19450000,
-    image: "/images/ring.png",
-    slug: "nhan-nu-sang-trong",
-  },
-  {
-    id: 1,
-    name: "Nhẫn Kim cương Vàng Trắng 14K My First Diamond – MFD58982",
-    price: 19945000,
-    image: "/images/ring.png",
-    slug: "nhan-vang-trang-14k-1",
-  },
-  {
-    id: 2,
-    name: "Nhẫn Kim cương Vàng 18K – MFD58983",
-    price: 18500000,
-    image: "/images/ring.png",
-    slug: "nhan-vang-18k",
-  },
-  {
-    id: 3,
-    name: "Nhẫn Kim cương Trắng – MFD58984",
-    price: 20450000,
-    image: "/images/ring.png",
-    slug: "nhan-kim-cuong-trang",
-  },
-  {
-    id: 4,
-    name: "Nhẫn Nữ Đính Đá Sang Trọng – MFD58985",
-    price: 19450000,
-    image: "/images/ring.png",
-    slug: "nhan-nu-sang-trong",
-  },
-];
+export default function RelatedProducts({ slug, categoryId }: Props) {
+  const [products, setProducts] = useState<Product[]>([]);
 
-export default function RelatedProducts({ slug }: { slug: string }) {
-  const filtered = relatedItems.filter((item) => item.slug !== slug);
+  useEffect(() => {
+    if (!categoryId) return;
 
-  if (filtered.length <= 4) {
+    getProductsByCategoryId(categoryId).then((res) => {
+      const filtered = res.filter((p) => p.slug !== slug);
+      setProducts(filtered);
+    });
+  }, [categoryId, slug]);
+
+  if (products.length <= 4) {
     return (
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
-        {filtered.map((item) => (
-          <ProductCard key={item.id} product={item} />
+        {products.map((product) => (
+          <ProductCard key={product.id} product={product} />
         ))}
       </div>
     );
@@ -89,14 +40,11 @@ export default function RelatedProducts({ slug }: { slug: string }) {
 
   return (
     <div className="relative">
-      {/* Swiper navigation buttons */}
       <div className="absolute -left-4 top-1/2 transform -translate-y-1/2 z-10">
-        <button className="swiper-button-prev p-2">
-        </button>
+        <button className="swiper-button-prev p-2" />
       </div>
       <div className="absolute -right-4 top-1/2 transform -translate-y-1/2 z-10">
-        <button className="swiper-button-next p-2">
-        </button>
+        <button className="swiper-button-next p-2" />
       </div>
 
       <Swiper
@@ -113,9 +61,9 @@ export default function RelatedProducts({ slug }: { slug: string }) {
           1024: { slidesPerView: 4 },
         }}
       >
-        {filtered.map((item) => (
-          <SwiperSlide key={item.id}>
-            <ProductCard product={item} />
+        {products.map((product) => (
+          <SwiperSlide key={product.id}>
+            <ProductCard product={product} />
           </SwiperSlide>
         ))}
       </Swiper>
@@ -130,7 +78,7 @@ function ProductCard({ product }: { product: Product }) {
       className="border rounded p-3 hover:shadow-lg transition duration-300 bg-white block"
     >
       <Image
-        src={product.image}
+        src={product.images?.[0] || "/placeholder.png"}
         width={160}
         height={160}
         alt={product.name}
@@ -139,7 +87,7 @@ function ProductCard({ product }: { product: Product }) {
       <div className="mt-2 text-sm text-center">
         <p className="font-medium truncate">{product.name}</p>
         <p className="text-blue-600 font-semibold">
-          {product.price.toLocaleString("vi-VN")}đ
+          {product.price.toLocaleString("vi-VN")}₫
         </p>
       </div>
     </Link>

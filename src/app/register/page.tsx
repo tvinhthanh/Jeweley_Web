@@ -1,18 +1,24 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { FaEye, FaEyeSlash, FaEnvelope, FaLock, FaUser } from "react-icons/fa";
+import { register as registerService, login as loginService } from "@/services/authService";
+import { useAppContext } from "@/context/AppContext";
 
 export default function RegisterPage() {
+  const router = useRouter();
+  const { login } = useAppContext();
+
   const [showPassword, setShowPassword] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
 
-  const [name, setName] = useState("");
+  const [userName, setUserName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rePassword, setRePassword] = useState("");
-
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
   useEffect(() => {
@@ -25,17 +31,15 @@ export default function RegisterPage() {
   const validate = () => {
     const newErrors: { [key: string]: string } = {};
 
-    if (!name.trim()) {
-      newErrors.name = "Vui lòng nhập tên.";
+    if (!userName.trim()) {
+      newErrors.userName = "Vui lòng nhập tên.";
     }
 
-    if (!/^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/.test(email)) {
+    if (!/^[\w.-]+@([\w-]+\.)+[\w-]{2,4}$/.test(email)) {
       newErrors.email = "Email không hợp lệ.";
     }
 
-    if (
-      !/^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/.test(password)
-    ) {
+    if (!/^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@#$!%*?&]{8,}$/.test(password)) {
       newErrors.password =
         "Mật khẩu cần ít nhất 8 ký tự, 1 chữ hoa, 1 số và 1 ký tự đặc biệt.";
     }
@@ -52,25 +56,26 @@ export default function RegisterPage() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     if (!validate()) return;
 
-    localStorage.setItem("acceptedTerms", "true");
+    try {
+      await registerService(userName, email, password);
 
-    // 👇 Thực hiện login/đăng ký ở đây
-    alert("Tạo tài khoản thành công (giả lập)");
+      const res = await loginService(email, password);
+      login(res.token, res.user);
+
+      alert("Tạo tài khoản và đăng nhập thành công!");
+      router.push("/");
+    } catch (err: any) {
+      setErrors({ api: err?.response?.data?.message || "Đăng ký thất bại" });
+    }
   };
 
   return (
     <div className="relative min-h-screen flex items-center justify-center bg-white px-4">
-      <Image
-        src="/images/bglogin.png"
-        alt="Background"
-        fill
-        className="object-cover"
-      />
+      <Image src="/images/bglogin.png" alt="Background" fill className="object-cover" />
 
       <div className="w-full h-[600px] max-w-6xl grid grid-cols-1 md:grid-cols-2 bg-white/80 backdrop-blur-sm rounded-2xl shadow-2xl overflow-hidden">
         <div className="p-6 md:p-12 flex flex-col justify-center bg-blue-50">
@@ -79,24 +84,22 @@ export default function RegisterPage() {
           </h2>
 
           <form className="space-y-4" onSubmit={handleSubmit}>
+            {/* Name */}
             <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
-                <FaUser />
-              </span>
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"><FaUser /></span>
               <input
                 type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
+                value={userName}
+                onChange={(e) => setUserName(e.target.value)}
                 placeholder="Nhập tên"
                 className="w-full pl-10 pr-4 py-3 rounded-full border border-gray-300"
               />
               {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
             </div>
 
+            {/* Email */}
             <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
-                <FaEnvelope />
-              </span>
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"><FaEnvelope /></span>
               <input
                 type="text"
                 value={email}
@@ -107,10 +110,9 @@ export default function RegisterPage() {
               {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
             </div>
 
+            {/* Password */}
             <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
-                <FaLock />
-              </span>
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"><FaLock /></span>
               <input
                 type={showPassword ? "text" : "password"}
                 value={password}
@@ -127,10 +129,9 @@ export default function RegisterPage() {
               {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
             </div>
 
+            {/* Confirm Password */}
             <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
-                <FaLock />
-              </span>
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"><FaLock /></span>
               <input
                 type={showPassword ? "text" : "password"}
                 value={rePassword}
@@ -147,6 +148,7 @@ export default function RegisterPage() {
               {errors.rePassword && <p className="text-red-500 text-sm mt-1">{errors.rePassword}</p>}
             </div>
 
+            {/* Checkbox */}
             <div className="flex items-start gap-2">
               <input
                 type="checkbox"
@@ -160,7 +162,9 @@ export default function RegisterPage() {
               </span>
             </div>
             {errors.terms && <p className="text-red-500 text-sm">{errors.terms}</p>}
+            {errors.api && <p className="text-red-600 text-sm">{errors.api}</p>}
 
+            {/* Submit */}
             <button
               type="submit"
               className="bg-blue-800 text-white w-full py-3 rounded-full font-semibold hover:bg-blue-700"
@@ -168,6 +172,7 @@ export default function RegisterPage() {
               Tạo tài khoản
             </button>
 
+            {/* Login link */}
             <p className="text-sm text-center text-gray-700">
               Bạn đã có tài khoản?{" "}
               <a href="/login" className="text-blue-700 font-semibold underline">
@@ -177,13 +182,9 @@ export default function RegisterPage() {
           </form>
         </div>
 
+        {/* Hình bên phải */}
         <div className="relative h-[800px] md:h-auto w-full md:w-[600px]">
-          <Image
-            src="/images/register.png"
-            alt="Jewelry Banner"
-            fill
-            className="object-cover"
-          />
+          <Image src="/images/register.png" alt="Jewelry Banner" fill className="object-cover" />
           <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
             <h2 className="text-white text-xl md:text-2xl font-semibold text-center px-6">
               Giá trị tạo nên khác biệt!

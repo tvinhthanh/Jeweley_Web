@@ -1,20 +1,21 @@
 "use client";
 
 import React, { useState } from "react";
-import Image from "next/image";
-import Link from "next/link";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation } from "swiper/modules";
 import "swiper/css";
 import "swiper/css/navigation";
-// import ProductCard from "./ProductCard";
+import ProductCard from "./ProductCard";
+import { Product } from "@/lib/types/types";
 
-interface Product {
-  name: string;
-  image: string;
-  price: number;
-  slug?: string;
-}
+// interface Product {
+//   id: number;
+//   name: string;
+//   image: string;
+//   price: number;
+//   slug: string;
+//   code?: string;
+// }
 
 type DisplayMode = "scroll" | "loadMore" | "full";
 
@@ -37,8 +38,16 @@ export default function ProductList({ products, displayMode = "full" }: Props) {
     if (products.length <= 4) {
       return (
         <div className="flex flex-wrap justify-center gap-6 max-w-screen-xl mx-auto">
-          {products.map((item, index) => (
-            <ProductCard key={index} product={item} />
+          {products.map((product) => (
+            <ProductCard
+              key={product.id}
+              id={product.id}
+              slug={product.slug}
+              title={product.name}
+              image={product.images[0] || "/images/ring.png"} // fallback image
+              price={product.price}
+              code={product.code}
+            />
           ))}
         </div>
       );
@@ -62,17 +71,23 @@ export default function ProductList({ products, displayMode = "full" }: Props) {
             }}
             className="relative"
           >
-            {products.map((item, index) => (
-              <SwiperSlide key={index}>
+            {products.map((product) => (
+              <SwiperSlide key={product.id}>
                 <div className="flex justify-center">
-                  <ProductCard product={item} />
+                  <ProductCard
+                    id={product.id}
+                    slug={product.slug}
+                    title={product.name}
+                    image={product.images[0] || "/images/ring.png"} // fallback image
+                    price={product.price}
+                    code={product.code}
+                  />
                 </div>
               </SwiperSlide>
             ))}
 
-            {/* Mũi tên bên trái */}
+            {/* Mũi tên trái/phải */}
             <div className="swiper-button-prev absolute left-0 top-1/2 -translate-y-1/2 z-10 text-2xl text-blue-500 px-1" />
-            {/* Mũi tên bên phải */}
             <div className="swiper-button-next absolute right-0 top-1/2 -translate-y-1/2 z-10 text-2xl text-blue-500 px-1" />
           </Swiper>
         </div>
@@ -80,12 +95,20 @@ export default function ProductList({ products, displayMode = "full" }: Props) {
     );
   }
 
-  // loadMore hoặc full
+  // full / loadMore
   return (
     <div className="bg-white py-8 px-4">
       <div className="flex flex-wrap justify-center gap-6 max-w-screen-xl mx-auto">
-        {visibleProducts.map((product, index) => (
-          <ProductCard key={index} product={product} />
+        {visibleProducts.map((product) => (
+          <ProductCard
+            key={product.id}
+            id={product.id}
+            slug={product.slug}
+            title={product.name}
+            image={product.images[0] || "/images/ring.png"} // fallback image
+            price={product.price}
+            code={product.code}
+          />
         ))}
       </div>
 
@@ -100,28 +123,5 @@ export default function ProductList({ products, displayMode = "full" }: Props) {
         </div>
       )}
     </div>
-  );
-}
-
-function ProductCard({ product }: { product: Product }) {
-  return (
-    <Link
-      href={product.slug ? `/product/${product.slug}` : "#"}
-      className="w-[250px] h-auto border rounded p-4 bg-white hover:shadow-md transition duration-300 flex flex-col items-center"
-    >
-      <Image
-        src={product.image}
-        width={180}
-        height={180}
-        alt={product.name}
-        className="object-contain mb-2"
-      />
-      <p className="text-center text-sm font-medium line-clamp-2">
-        {product.name}
-      </p>
-      <p className="text-blue-600 font-semibold mt-1">
-        {product.price.toLocaleString("vi-VN")}đ
-      </p>
-    </Link>
   );
 }

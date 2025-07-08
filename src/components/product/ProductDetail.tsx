@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   FaCreditCard,
   FaGift,
@@ -9,61 +9,133 @@ import {
   FaRegHeart,
   FaStar,
 } from "react-icons/fa";
+import { Products, Variation } from "@/lib/types/types";
+import { getProductVariations } from "@/services/productService";
+import { addFavorite, removeFavorite } from "@/services/favoritesService";
+import { addToCart } from "@/services/cartService";
 
-type Product = {
-  name: string;
-  slug: string;
-  material: string;
-  price: number;
-  oldPrice?: number;
-  rating: number;
-  ratingCount: number;
-  sizes: string[];
-  images: string[];
-  description: string;
-  colors?: string[];
-};
-
-export default function ProductDetail({ product }: { product: Product }) {
+export default function ProductDetail({ product }: { product: Products }) {
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [selectedColor, setSelectedColor] = useState<string | null>(null);
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
+  const [variations, setVariations] = useState<Variation[]>([]);
+  const [selectedPrice, setSelectedPrice] = useState<number | null>(null);
+  const [oldPrice, setOldPrice] = useState<number | null>(null);
 
-  const handleAddToCart = () => {
+  // Fetch variations
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const data = await getProductVariations(product.id);
+        setVariations(data);
+      } catch (error) {
+        console.error("Không thể lấy biến thể sản phẩm:", error);
+      }
+    };
+    fetchData();
+  }, [product.id]);
+
+  // Cập nhật giá khi chọn variation
+  useEffect(() => {
     if (!selectedColor || !selectedSize) {
-      alert("Vui lòng chọn màu và size trước khi thêm vào giỏ hàng.");
+      setSelectedPrice(null);
+      setOldPrice(null);
       return;
     }
 
-    const cartItem = {
-      name: product.name,
-      slug: product.slug,
-      price: product.price,
-      image: product.images[0],
-      color: selectedColor,
-      size: selectedSize,
+    const matched = variations.find((v) => {
+      const attr = v.attributes;
+      return (
+        attr["color"]?.toLowerCase() === selectedColor.toLowerCase() &&
+        attr["size"]?.toLowerCase() === selectedSize.toLowerCase()
+      );
+    });
+
+    if (matched) {
+      setSelectedPrice(matched.sale_price || matched.price);
+      setOldPrice(matched.sale_price ? matched.regular_price : null);
+    } else {
+      setSelectedPrice(null);
+      setOldPrice(null);
+    }
+  }, [selectedColor, selectedSize, variations]);
+
+  const handleAddToCart = async () => {
+    if (!selectedColor || !selectedSize) {
+      alert("Vui lòng chọn màu và size.");
+      return;
+    }
+
+    const matched = variations.find((v) => {
+      const attr = v.attributes;
+      return (
+        attr["color"]?.toLowerCase() === selectedColor.toLowerCase() &&
+        attr["size"]?.toLowerCase() === selectedSize.toLowerCase()
+      );
+    });
+
+    if (!matched) {
+      alert("Không tìm thấy biến thể phù hợp.");
+      return;
+    }
+
+    const payload = {
+      product_id: product.id,
       quantity: 1,
+      variation: {
+        color: selectedColor,
+        size: selectedSize,
+      },
+      snapshot: {
+        slug: product.slug || "",
+        name: product.name,
+        image: matched.image || product.images[0], // lấy từ variation nếu có
+        price: matched.sale_price || matched.price,
+      },
     };
 
-    console.log("Thêm vào giỏ:", cartItem);
-    // TODO: Gửi lên context, redux hoặc localStorage tại đây
+    try {
+      await addToCart(payload);
+      alert("Đã thêm sản phẩm vào giỏ hàng.");
+    } catch (error) {
+      console.error("Add to cart failed:", error);
+      alert("Lỗi khi thêm vào giỏ hàng.");
+    }
+  };
+
+  const handleToggleFavorite = async () => {
+    try {
+      if (isWishlisted) {
+        await removeFavorite(product.id);
+        setIsWishlisted(false);
+      } else {
+        await addFavorite(product.id);
+        setIsWishlisted(true);
+      }
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        alert(error.message);
+      } else {
+        alert("Đã xảy ra lỗi không xác định.");
+      }
+    }
   };
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-screen-xl mx-auto p-6">
-      {/* Left: Gallery và hình lớn */}
+      {/* Left: Gallery */}
       <div className="flex gap-4">
         <div className="flex flex-col items-center gap-2">
           <button className="text-gray-500 rotate-180">▲</button>
           {product.images.map((img, idx) => (
-            <Image
-              key={idx}
-              src={img}
-              alt={`thumb-${idx}`}
-              width={200}
-              height={200}
-              className="rounded object-cover border cursor-pointer"
-            />
+            <div key={idx} className="w-24 h-24 relative">
+              <Image
+                src={img}
+                alt={`thumb-${idx}`}
+                fill
+                className="object-cover rounded border cursor-pointer"
+              />
+            </div>
           ))}
           <button className="text-gray-500">▼</button>
         </div>
@@ -77,7 +149,6 @@ export default function ProductDetail({ product }: { product: Product }) {
               className="object-contain"
             />
           </div>
-
           <div className="mt-4 flex justify-center">
             <Image
               src="/images/shadow-ellipse.svg"
@@ -94,18 +165,16 @@ export default function ProductDetail({ product }: { product: Product }) {
         <h1 className="text-2xl font-bold">{product.name}</h1>
 
         <div className="text-red-600 text-xl font-semibold">
-          {product.price.toLocaleString("vi-VN")} ₫
-          {product.oldPrice && (
+          {(selectedPrice ?? product.price).toLocaleString("vi-VN")} ₫
+          {oldPrice && (
             <span className="text-gray-400 line-through ml-3">
-              {product.oldPrice.toLocaleString("vi-VN")} ₫
+              {oldPrice.toLocaleString("vi-VN")} ₫
             </span>
           )}
         </div>
 
-        <div className="text-sm text-gray-700">Chất liệu: {product.material}</div>
-
-        {/* Chọn màu */}
-        {product.colors?.length > 0 && (
+        {/* Color Selector */}
+        {Array.isArray(product.colors) && product.colors.length > 0 && (
           <div>
             <p className="font-medium">Chọn màu:</p>
             <div className="flex items-center gap-3 mt-2">
@@ -117,9 +186,9 @@ export default function ProductDetail({ product }: { product: Product }) {
                   }`}
                   style={{
                     background:
-                      color === "silver"
+                      color.toLowerCase() === "silver"
                         ? "linear-gradient(to right, #ccc, #999)"
-                        : color === "gold"
+                        : color.toLowerCase() === "gold"
                         ? "radial-gradient(circle at center, #ffd700, #daa520)"
                         : color,
                   }}
@@ -130,19 +199,17 @@ export default function ProductDetail({ product }: { product: Product }) {
           </div>
         )}
 
-        {/* Đánh giá */}
+        {/* Rating */}
         <div className="flex items-center gap-1 text-yellow-500">
           {Array.from({ length: product.rating }).map((_, i) => (
-            <span key={i}>
-              <FaStar />
-            </span>
+            <FaStar key={i} />
           ))}
           <span className="ml-2 text-sm text-gray-600">
             ({product.ratingCount} đánh giá)
           </span>
         </div>
 
-        {/* Chọn size */}
+        {/* Size Selector */}
         <div>
           <p className="font-medium">Chọn size:</p>
           <div className="flex flex-wrap gap-2 mt-2">
@@ -169,11 +236,11 @@ export default function ProductDetail({ product }: { product: Product }) {
           Thêm vào giỏ
         </button>
 
-        {/* Yêu thích & Trả góp */}
+        {/* Favorite + Credit */}
         <div className="flex flex-col gap-2 text-sm text-gray-700 mt-2">
           <div
             className="flex items-center gap-2 cursor-pointer hover:text-black"
-            onClick={() => setIsWishlisted(!isWishlisted)}
+            onClick={handleToggleFavorite}
           >
             <span className="text-lg">
               {isWishlisted ? <FaHeart className="text-red-500" /> : <FaRegHeart />}
@@ -185,24 +252,19 @@ export default function ProductDetail({ product }: { product: Product }) {
             </span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-lg">
-              <FaCreditCard />
-            </span>
+            <FaCreditCard />
             <span>Trả góp qua thẻ tín dụng</span>
           </div>
         </div>
 
-        {/* Hộp quà */}
+        {/* Gift box */}
         <div className="border px-4 py-3 mt-4 rounded relative">
           <div className="flex items-start gap-3">
-            <span className="text-2xl mt-1">
-              <FaGift />
-            </span>
+            <FaGift className="text-2xl mt-1" />
             <div>
               <p className="font-semibold text-base">TẶNG QUÀ</p>
               <p className="text-sm text-gray-600 leading-snug mt-1">
-                Lorem ipsum dolor sit amet consectetur. Sed commodo pellentesque arcu
-                tristique et morbi.
+                Bạn có thể gửi quà cho người thân, người yêu với gói quà tặng sang trọng.
               </p>
             </div>
           </div>
@@ -212,7 +274,7 @@ export default function ProductDetail({ product }: { product: Product }) {
         </div>
       </div>
 
-      {/* Mô tả chi tiết */}
+      {/* Description */}
       <div className="col-span-1 md:col-span-2 mt-8">
         <p className="text-sm text-justify leading-6 text-gray-800">
           {product.description}

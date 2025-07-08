@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useRouter } from "next/navigation";
@@ -11,22 +12,42 @@ import {
 } from "react-icons/fa";
 import { MdLocationOn } from "react-icons/md";
 import { useAppContext } from "@/context/AppContext";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import CartDrawer from "@/components/cart/CartDrawer";
+import { fetchCart } from "@/services/cartService";
 
 const NAV_ITEMS = [
-  { label: "TRANG SỨC", path: "/category/trang-suc" },
-  { label: "TRANG SỨC CƯỚI", path: "/category/trang-suc-cuoi" },
-  { label: "TRANG SỨC KIM CƯƠNG", path: "/category/kim-cuong" },
-  { label: "TRANG SỨC NAM", path: "/category/nam" },
-  { label: "TRANG SỨC NỮ", path: "/category/nu" },
-  { label: "TRANG SỨC THƯƠNG HIỆU", path: "/category/thuong-hieu" },
+  { label: "Trang chủ", slug: "/" },
+  { label: "Trang sức cưới", slug: "wedding" },
+  { label: "Trang sức kim cương", slug: "diamond" },
+  { label: "Trang sức nam", slug: "man" },
+  { label: "Trang sức nữ", slug: "woman" },
+  { label: "Bài viết", slug: "/blog" },
 ];
 
 export default function Header() {
   const router = useRouter();
   const { user, logout } = useAppContext();
   const [showCart, setShowCart] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
+  const [totalQuantity, setTotalQuantity] = useState<number>(0);
+
+  useEffect(() => {
+    const loadCartQuantity = async () => {
+      try {
+        const cart = await fetchCart();
+        const total = cart.reduce((sum: number, item: any) => {
+          return sum + item.quantity;
+        }, 0);
+        setTotalQuantity(total);
+      } catch (err) {
+        console.error("Không thể load giỏ hàng:", err);
+      }
+    };
+
+    loadCartQuantity();
+  }, []);
+
 
   const goToHome = () => router.push("/");
   const goToLogin = () => router.push("/login");
@@ -42,7 +63,7 @@ export default function Header() {
               <span className="text-yellow-400">🇻🇳</span> VIETNAM
             </span>
             <span className="flex items-center gap-1">
-              <FaInfoCircle className="text-white" /> Thông tin khuyến mãi mới nhất
+              <FaInfoCircle /> Thông tin khuyến mãi mới nhất
             </span>
           </div>
           <div className="flex items-center gap-4">
@@ -52,10 +73,11 @@ export default function Header() {
             >
               <FaInfoCircle /> Chúng tôi
             </span>
-
-            <span className="flex items-center gap-1 cursor-pointer hover:text-yellow-300"
-                  onClick={() => router.push("/store-locator")}>
-              <MdLocationOn/> Cửa hàng
+            <span
+              className="flex items-center gap-1 cursor-pointer hover:text-yellow-300"
+              onClick={() => router.push("/store-locator")}
+            >
+              <MdLocationOn /> Cửa hàng
             </span>
             <span className="flex items-center gap-1">
               <FaHeadset /> 1900 8888
@@ -73,9 +95,10 @@ export default function Header() {
               <span className="text-blue-600">📍 COMPANY</span>
               <div className="text-xs text-gray-500">Your Logo Here</div>
             </div>
-            <button className="border border-blue-500 text-blue-600 px-3 py-1 rounded hover:bg-blue-200 transition text-sm"
+            <button
+              className="border border-blue-500 text-blue-600 px-3 py-1 rounded hover:bg-blue-200 transition text-sm"
               onClick={() => router.push("/contact?tab=email")}
-             >
+            >
               Become a Partner
             </button>
           </div>
@@ -93,23 +116,29 @@ export default function Header() {
           {/* Icons */}
           <div className="flex items-center gap-4 text-lg relative">
             {user ? (
-              <div className="relative group cursor-pointer">
+              <div
+                className="relative"
+                onMouseEnter={() => setShowMenu(true)}
+                onMouseLeave={() => setShowMenu(false)}
+              >
                 <div
-                  className="flex items-center gap-1 hover:text-blue-600"
+                  className="flex items-center gap-1 hover:text-blue-600 cursor-pointer"
                   onClick={goToProfile}
                 >
                   <FaUser />
                   <span className="text-sm">{user.name}</span>
                 </div>
-                <div className="absolute top-8 left-0 hidden group-hover:block bg-white border rounded shadow-md px-4 py-2 z-10 text-sm w-48">
-                  <p className="text-gray-700 font-semibold">{user.email}</p>
-                  <button
-                    onClick={logout}
-                    className="mt-2 text-red-600 hover:underline"
-                  >
-                    Đăng xuất
-                  </button>
-                </div>
+                {showMenu && (
+                  <div className="absolute top-8 left-0 bg-white border rounded shadow-md px-4 py-2 z-10 text-sm w-48">
+                    <p className="text-gray-700 font-semibold">{user.email}</p>
+                    <button
+                      onClick={logout}
+                      className="mt-2 text-red-600 hover:underline"
+                    >
+                      Đăng xuất
+                    </button>
+                  </div>
+                )}
               </div>
             ) : (
               <FaUser
@@ -118,17 +147,19 @@ export default function Header() {
                 onClick={goToLogin}
               />
             )}
+
             <FaHeart
               className="cursor-pointer hover:text-blue-600"
               title="Yêu thích"
               onClick={() => router.push("/profile?tab=favorites")}
             />
+
             <div
               className="flex items-center gap-1 cursor-pointer hover:text-blue-600"
               onClick={() => setShowCart(true)}
             >
               <FaShoppingCart />
-              <span className="text-sm">Cart $0.00</span>
+              <span className="text-sm">Cart ({totalQuantity})</span>
             </div>
           </div>
         </div>
@@ -141,7 +172,11 @@ export default function Header() {
             <span
               key={idx}
               className="hover:text-blue-600 cursor-pointer"
-              onClick={() => router.push(`/category/${item.path.split("/").pop()}`)}
+              onClick={() =>
+                item.slug.startsWith("/") || item.slug === "blog"
+                  ? router.push(item.slug)
+                  : router.push(`/category/${item.slug}`)
+              }
             >
               {item.label}
             </span>
@@ -149,7 +184,7 @@ export default function Header() {
         </nav>
       </div>
 
-      {/* ✨ Drawer Cart hiển thị cuối cùng trong DOM */}
+      {/* Drawer Cart */}
       <CartDrawer open={showCart} onClose={() => setShowCart(false)} />
     </header>
   );

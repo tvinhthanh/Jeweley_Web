@@ -1,76 +1,117 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-
-const cartItems = [
-  {
-    id: 1,
-    name: "Nhẫn Kim cương Vàng Trắng 14K",
-    code: "My First Diamond - MFDB52689",
-    image: "/images/ring.png",
-    price: 19945000,
-    quantity: 2,
-  },
-  {
-    id: 2,
-    name: "Nhẫn Kim cương Vàng Trắng 14K",
-    code: "My First Diamond - MFDB52689",
-    image: "/images/ring.png",
-    price: 19945000,
-    quantity: 2,
-  },
-  {
-    id: 3,
-    name: "Nhẫn Kim cương Vàng Trắng 14K",
-    code: "My First Diamond - MFDB52689",
-    image: "/images/ring.png",
-    price: 19945000,
-    quantity: 2,
-  },
-];
+import { deleteCartItem, fetchCart, updateCartItem } from "@/services/cartService";
+import formatPrice from "@/lib/ultis/FormatPrice";
+import { CartItem } from "@/lib/types/types";
 
 export default function CartPage() {
   const router = useRouter();
-  const [items, setItems] = useState(cartItems);
+  const [items, setItems] = useState<CartItem[]>([]);
   const [shipping, setShipping] = useState("free");
-  const [discountCode, setDiscountCode] = useState("");
 
-  const handleQuantity = (id: number, delta: number) => {
+  const loadCart = async () => {
+    try {
+      const data = await fetchCart();
+      setItems(data || []);
+    } catch (error) {
+      console.error("Lỗi khi tải giỏ hàng:", error);
+    }
+  };
+
+  useEffect(() => {
+    loadCart();
+  }, []);
+
+  const handleQuantity = async (
+    productId: number,
+    delta: number,
+    variation: { color: string; size: string }
+  ) => {
     setItems((prev) =>
       prev.map((item) =>
-        item.id === id
+        item.product_id === productId &&
+        item.variation?.color === variation.color &&
+        item.variation?.size === variation.size
           ? { ...item, quantity: Math.max(1, item.quantity + delta) }
           : item
       )
     );
-  };
 
-  const handleRemove = (id: number) => {
-    setItems((prev) => prev.filter((item) => item.id !== id));
+    try {
+      const targetItem = items.find(
+        (i) =>
+          i.product_id === productId &&
+          i.variation?.color === variation.color &&
+          i.variation?.size === variation.size
+      );
+      if (!targetItem) return;
+
+      const newQuantity = targetItem.quantity + delta;
+
+      if (newQuantity < 1) {
+        // Nếu giảm xuống dưới 1, xoá luôn
+        await deleteCartItem(productId, variation);
+      } else {
+        // Còn lại thì update bình thường
+        await updateCartItem(productId, variation, newQuantity);
+      }
+
+      // Refresh lại cart
+      const updated = await fetchCart();
+      setItems(updated || []);
+    } catch (error) {
+      console.error("Cập nhật số lượng thất bại:", error);
+    }
   };
 
   const handleCheckout = () => {
+    const summary = {
+      shippingMethod: shipping,
+      shippingCost,
+      subtotal,
+      total,
+      items, // lưu toàn bộ giỏ hàng
+    };
+
+    localStorage.setItem("checkout_summary", JSON.stringify(summary));
     router.push("/checkout");
   };
 
+
+  const handleRemove = async (item: CartItem) => {
+    try {
+      await deleteCartItem(item.product_id, {
+        color: item.variation?.color || "",
+        size: item.variation?.size || "",
+      });
+      loadCart();
+    } catch (err) {
+      console.error("Xoá sản phẩm thất bại:", err);
+    }
+  };
+
   const subtotal = items.reduce(
-    (sum, item) => sum + item.price * item.quantity,
+    (sum, item) => sum + (item.snapshot?.price as number) * item.quantity,
     0
   );
+
   const shippingCost =
     shipping === "fast"
       ? 200000
       : shipping === "store"
       ? -Math.round(subtotal * 0.005)
       : 0;
+
   const total = subtotal + shippingCost;
 
   return (
     <div className="flex flex-col items-center">
-      {/* Bước tiến trình */}
       <h2 className="text-2xl font-bold mb-6">Giỏ hàng</h2>
+
       <div className="flex items-center gap-8 justify-center mb-10">
         {[1, 2, 3].map((step) => (
           <div key={step} className="flex items-center gap-2">
@@ -110,24 +151,28 @@ export default function CartPage() {
 
           {items.map((item) => (
             <div
-              key={item.id}
+              key={`${item.product_id}-${item.variation?.color}-${item.variation?.size}`}
               className="grid grid-cols-12 items-center py-4 border-b"
             >
               <div className="col-span-5 flex items-center gap-4">
                 <Image
-                  src={item.image}
-                  alt={item.name}
+                  src={item.snapshot?.image || "/placeholder.jpg"}
+                  alt={item.snapshot?.name || "Sản phẩm"}
                   width={64}
                   height={64}
                   className="object-contain"
                 />
                 <div>
                   <p className="font-semibold text-sm truncate max-w-[180px]">
-                    {item.name}
+                    {item.snapshot?.name}
                   </p>
-                  <p className="text-xs text-gray-500">{item.code}</p>
+                  <p className="text-xs text-gray-500">{item.snapshot?.slug}</p>
+                  <p className="text-xs text-gray-500">
+                    {item.variation?.color && `Màu: ${item.variation.color}`}{" "}
+                    {item.variation?.size && `• Size: ${item.variation.size}`}
+                  </p>
                   <button
-                    onClick={() => handleRemove(item.id)}
+                    onClick={() => handleRemove(item)}
                     className="text-sm text-gray-400 underline"
                   >
                     Loại khỏi giỏ hàng
@@ -138,47 +183,36 @@ export default function CartPage() {
               <div className="col-span-2 flex items-center gap-2">
                 <button
                   className="w-6 h-6 rounded border text-center"
-                  onClick={() => handleQuantity(item.id, -1)}
+                  onClick={() =>
+                    handleQuantity(item.product_id, -1, {
+                      color: item.variation?.color || "",
+                      size: item.variation?.size || "",
+                    })
+                  }
                 >
                   −
                 </button>
                 <span>{item.quantity}</span>
                 <button
                   className="w-6 h-6 rounded border text-center"
-                  onClick={() => handleQuantity(item.id, 1)}
+                  onClick={() =>
+                    handleQuantity(item.product_id, 1, {
+                      color: item.variation?.color || "",
+                      size: item.variation?.size || "",
+                    })
+                  }
                 >
                   +
                 </button>
               </div>
 
-              <div className="col-span-2">
-                {item.price.toLocaleString("vi-VN")}
-              </div>
+              <div className="col-span-2">{formatPrice(item.snapshot?.price as number)}</div>
 
               <div className="col-span-3 font-semibold">
-                {(item.price * item.quantity).toLocaleString("vi-VN")}
+                {formatPrice((item.snapshot?.price as number) * item.quantity)}
               </div>
             </div>
           ))}
-
-          {/* Mã giảm giá */}
-          <div className="mt-6">
-            <p className="text-sm font-medium mb-2">Bạn có mã giảm giá</p>
-            <p className="text-sm mb-2">
-              Thêm mã của bạn để được giảm giá giỏ hàng ngay lập tức
-            </p>
-            <div className="flex gap-2">
-              <input
-                value={discountCode}
-                onChange={(e) => setDiscountCode(e.target.value)}
-                placeholder="Code"
-                className="border rounded px-4 py-2 w-48 text-sm"
-              />
-              <button className="bg-gray-200 hover:bg-gray-300 rounded px-4 text-sm">
-                Thêm
-              </button>
-            </div>
-          </div>
         </div>
 
         {/* Thông tin đơn hàng */}
@@ -223,11 +257,11 @@ export default function CartPage() {
           <div className="border-t pt-4 text-sm">
             <div className="flex justify-between">
               <span>Tổng phụ</span>
-              <span>{subtotal.toLocaleString("vi-VN")}</span>
+              <span>{formatPrice(subtotal)}</span>
             </div>
             <div className="flex justify-between font-semibold text-lg mt-2">
               <span>Tổng</span>
-              <span>{total.toLocaleString("vi-VN")}</span>
+              <span>{formatPrice(total)}</span>
             </div>
           </div>
 
@@ -237,6 +271,7 @@ export default function CartPage() {
           >
             Thanh toán
           </button>
+          
         </div>
       </div>
     </div>

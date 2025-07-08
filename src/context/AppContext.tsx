@@ -1,53 +1,77 @@
-// context/AppContext.tsx
 "use client";
 
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
-
-interface User {
-  id: number;
-  name: string;
-  email: string;
-}
+import { User } from "@/lib/interface/User";
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  ReactNode,
+} from "react";
 
 interface AppContextType {
   token: string | null;
   user: User | null;
   login: (token: string, user: User) => void;
   logout: () => void;
+  setUser: (user: User) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [token, setToken] = useState<string | null>(null);
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUserState] = useState<User | null>(null);
 
-  useEffect(() => {
-    const storedToken = localStorage.getItem("token");
-    const storedUser = localStorage.getItem("user");
-
-    if (storedToken && storedUser) {
-      setToken(storedToken);
-      setUser(JSON.parse(storedUser));
-    }
-  }, []);
+  // Hàm setUser gộp thêm localStorage
+  const setUser = (newUser: User) => {
+    setUserState(newUser);
+    localStorage.setItem("user", JSON.stringify(newUser));
+  };
 
   const login = (newToken: string, newUser: User) => {
     setToken(newToken);
     setUser(newUser);
     localStorage.setItem("token", newToken);
-    localStorage.setItem("user", JSON.stringify(newUser));
   };
 
   const logout = () => {
     setToken(null);
-    setUser(null);
+    setUserState(null);
     localStorage.removeItem("token");
     localStorage.removeItem("user");
   };
 
+  useEffect(() => {
+  const storedToken = localStorage.getItem("token");
+  const storedUser = localStorage.getItem("user");
+
+  if (storedToken) {
+    setToken(storedToken);
+  }
+
+  if (storedUser && storedUser !== "undefined") {
+    try {
+      const parsedUser: User = JSON.parse(storedUser);
+      setUserState(parsedUser);
+    } catch (error) {
+      console.error("Invalid stored user:", error);
+      localStorage.removeItem("user");
+    }
+  }
+}, []);
+
+
   return (
-    <AppContext.Provider value={{ token, user, login, logout }}>
+    <AppContext.Provider
+      value={{
+        token,
+        user,
+        login,
+        logout,
+        setUser,
+      }}
+    >
       {children}
     </AppContext.Provider>
   );

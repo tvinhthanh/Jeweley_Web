@@ -1,4 +1,4 @@
-import { getProductsByType } from "@/lib/productService";
+import { getProductsByType } from "@/lib/types/productService";
 import Image from "next/image";
 
 export default async function TypePage({ params }: { params: { slug: string } }) {
