@@ -5,9 +5,10 @@ import CommentList from "@/components/comment/CommentList";
 import { getProductBySlug } from "@/services/productService";
 import { Product } from "@/lib/types/types";
 
-// ✅ Required by Next.js App Router if you don't use generateStaticParams
+// 👇 Không cần staticParams nếu dùng dynamic routing
 export const dynamicParams = true;
 
+// ✅ Khai báo đúng type props, không dùng Promise ở đâu cả
 type ProductPageProps = {
   params: {
     slug: string;
@@ -15,22 +16,19 @@ type ProductPageProps = {
 };
 
 export default async function ProductPage({ params }: ProductPageProps) {
-  const { slug } = params;
+  const slug = params.slug;
 
-  // Nếu không có slug → trả về trang 404
   if (!slug) return notFound();
 
-  // Lấy thông tin sản phẩm theo slug
   let product: Product | null = null;
 
   try {
     product = await getProductBySlug(slug);
-  } catch (error) {
-    console.error("Lỗi khi lấy sản phẩm:", error);
+  } catch (err) {
+    console.error("Lỗi khi gọi API getProductBySlug:", err);
     return notFound();
   }
 
-  // Nếu không tìm thấy sản phẩm
   if (!product) {
     return (
       <div className="text-center py-20">
@@ -41,7 +39,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
   return (
     <div className="space-y-12">
-      {/* Thông tin chi tiết sản phẩm */}
+      {/* Chi tiết sản phẩm */}
       <ProductDetail product={product} />
 
       {/* Sản phẩm tương tự */}
