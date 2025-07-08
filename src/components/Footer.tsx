@@ -1,3 +1,5 @@
+"use client";
+
 import { FaFacebook, FaInstagram, FaYoutube, FaEnvelope } from "react-icons/fa";
 
 export default function Footer() {

@@ -6,7 +6,7 @@ import { updateMe, getMe } from "@/services/authService";
 import { useState, useEffect } from "react";
 
 export function InfoTab() {
-  const { user, setUser } = useAppContext();
+  const { user, updateUser } = useAppContext();
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -51,7 +51,7 @@ export function InfoTab() {
       });
 
       const updatedUser = await getMe();
-      setUser(updatedUser);
+      updateUser(updatedUser);
 
       alert("Cập nhật thành công!");
     } catch (err: any) {

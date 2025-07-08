@@ -152,6 +152,7 @@ export interface Product {
   category: { id: number; name: string }[];
   type: string[];
   code: string;
+  image?: string;
 }
 export interface BlogItem {
   id: number;

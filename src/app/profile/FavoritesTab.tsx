@@ -67,7 +67,9 @@ export default function FavoritesTab() {
 
       {favorites.map((item) => {
         const imageSrc =
-          item.images?.length > 0 ? item.images[0] : item.image || "/images/ring.png";
+          Array.isArray(item.images) && item.images.length > 0
+            ? item.images[1]
+            : item.image || "/images/ring.png";
 
         return (
           <div
@@ -87,15 +89,15 @@ export default function FavoritesTab() {
                 <Image
                   src={imageSrc}
                   alt={item.name}
-                  layout="fill"
-                  objectFit="contain"
+                  fill
+                  className="object-contain"
                 />
               </div>
 
               <div>
                 <p className="text-black">{item.name}</p>
                 {item.category?.[0]?.name && (
-                  <p className="text-black-400 text-xs">
+                  <p className="text-gray-500 text-xs">
                     {item.category[0].name}
                   </p>
                 )}

@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import api from './api';
+import api from "./api";
 
 export const login = async (identifier: string, password: string) => {
   const response = await api.post("/jwt-auth/v1/token", {
@@ -24,23 +24,22 @@ export const login = async (identifier: string, password: string) => {
   };
 };
 
-
 export const register = async (
   username: string,
   email: string,
   password: string
 ) => {
-  const response = await api.post('/custom/v1/register', {
+  const response = await api.post("/custom/v1/register", {
     username,
     email,
-    password
+    password,
   });
 
   return response.data;
 };
 export const getMe = async () => {
-  const token = localStorage.getItem('token');
-  const response = await api.get('/wp-json/wp/v2/users/me', {
+  const token = localStorage.getItem("token");
+  const response = await api.get("/wp/v2/users/me", {
     headers: { Authorization: `Bearer ${token}` },
   });
   return response.data;
@@ -55,35 +54,41 @@ export const updateMe = async (data: {
   last_name?: string;
 }) => {
   const token = localStorage.getItem("token");
-  const response = await api.post(
-    "/custom/v1/update-user",
-    data,
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    }
-  );
+  const response = await api.post("/custom/v1/update-user", data, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
   return response.data;
 };
-
 
 export const uploadAvatar = async (file: File) => {
   const token = localStorage.getItem("token");
-  const formData = new FormData();
-  formData.append("avatar", file); 
-  const response = await api.post(
-    "/custom/v1/upload-avatar",
-    formData,
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    }
-  );
 
-  return response.data;
+  if (!token || !token.includes('.')) {
+    throw new Error("Token không hợp lệ hoặc người dùng chưa đăng nhập.");
+  }
+
+  const formData = new FormData();
+  formData.append("avatar", file);
+
+  const response = await api.post("/custom/v1/upload-avatar", formData, {
+    headers: {
+      "Authorization": `Bearer ${token}`,
+      // KHÔNG cần Content-Type nếu dùng FormData — trình duyệt sẽ tự set với boundary
+    },
+  });
+
+  const { media_id, avatar_url } = response.data;
+
+  return {
+    media_id,
+    avatar_url,
+  };
 };
+
+
+
 export const getCustomerAddress = async () => {
   const token = localStorage.getItem("token");
   const response = await api.get("/custom/v1/customer-address", {

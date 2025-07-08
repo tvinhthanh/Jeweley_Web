@@ -14,7 +14,7 @@ interface AppContextType {
   user: User | null;
   login: (token: string, user: User) => void;
   logout: () => void;
-  setUser: (user: User) => void;
+  updateUser: (user: User) => void; // ✅ đổi tên tránh trùng
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -23,15 +23,14 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [token, setToken] = useState<string | null>(null);
   const [user, setUserState] = useState<User | null>(null);
 
-  // Hàm setUser gộp thêm localStorage
-  const setUser = (newUser: User) => {
+  const updateUser = (newUser: User) => {
     setUserState(newUser);
     localStorage.setItem("user", JSON.stringify(newUser));
   };
 
   const login = (newToken: string, newUser: User) => {
     setToken(newToken);
-    setUser(newUser);
+    updateUser(newUser);
     localStorage.setItem("token", newToken);
   };
 
@@ -43,24 +42,23 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   };
 
   useEffect(() => {
-  const storedToken = localStorage.getItem("token");
-  const storedUser = localStorage.getItem("user");
+    const storedToken = localStorage.getItem("token");
+    const storedUser = localStorage.getItem("user");
 
-  if (storedToken) {
-    setToken(storedToken);
-  }
-
-  if (storedUser && storedUser !== "undefined") {
-    try {
-      const parsedUser: User = JSON.parse(storedUser);
-      setUserState(parsedUser);
-    } catch (error) {
-      console.error("Invalid stored user:", error);
-      localStorage.removeItem("user");
+    if (storedToken) {
+      setToken(storedToken);
     }
-  }
-}, []);
 
+    if (storedUser && storedUser !== "undefined") {
+      try {
+        const parsedUser: User = JSON.parse(storedUser);
+        setUserState(parsedUser);
+      } catch (error) {
+        console.error("Invalid stored user:", error);
+        localStorage.removeItem("user");
+      }
+    }
+  }, []);
 
   return (
     <AppContext.Provider
@@ -69,7 +67,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         user,
         login,
         logout,
-        setUser,
+        updateUser, // ✅ đổi tên đúng
       }}
     >
       {children}
@@ -79,6 +77,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
 export const useAppContext = () => {
   const context = useContext(AppContext);
-  if (!context) throw new Error("useAppContext must be used within AppProvider");
+  if (!context)
+    throw new Error("useAppContext must be used within AppProvider");
   return context;
 };

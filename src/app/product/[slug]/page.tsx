@@ -5,15 +5,14 @@ import CommentList from "@/components/comment/CommentList";
 import { getProductBySlug } from "@/services/productService";
 import { Product } from "@/lib/types/types";
 
-export const dynamicParams = true;
 export const dynamic = "force-dynamic";
 
-type ProductPageProps = {
-  params: Promise<{ slug: string }>;
-};
-
-export default async function ProductPage({ params }: ProductPageProps) {
-  const { slug } = await params; 
+export default async function ProductPage({
+  params,
+}: {
+  params: { slug: string };
+}) {
+  const { slug } = params;
 
   if (!slug) return notFound();
 
