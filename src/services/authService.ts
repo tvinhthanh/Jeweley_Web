@@ -75,7 +75,6 @@ export const uploadAvatar = async (file: File) => {
   const response = await api.post("/custom/v1/upload-avatar", formData, {
     headers: {
       "Authorization": `Bearer ${token}`,
-      // KHÔNG cần Content-Type nếu dùng FormData — trình duyệt sẽ tự set với boundary
     },
   });
 

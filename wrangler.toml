@@ -1,0 +1,12 @@
+name = "nutrangvietnam"
+type = "javascript"
+account_id = "c1474c98a4b75e1e3b7e672e9c76a247"
+compatibility_date = "2025-07-09"
+
+[build]
+command = "npx vercel build"
+
+[site]
+bucket = ".vercel/output/static"
+
+[deploy]

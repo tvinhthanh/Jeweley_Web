@@ -221,7 +221,7 @@ const CheckoutPage = () => {
       await clearCart();
       localStorage.removeItem("checkout_summary");
       localStorage.setItem("last_order_id", res.id);
-      router.push("/checkout/success");
+      router.push("/success");
     } catch (err: any) {
       // Coupon bị lỗi
       if (
